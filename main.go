@@ -185,17 +185,18 @@ func line(img *image.RGBA, x0, y0, x1, y1 int, clr color.RGBA) {
 	}
 }
 
-var savewait sync.WaitGroup
+var saveWait sync.WaitGroup
 var saveScratch *image.RGBA
 
 func save(img *image.RGBA, name string) {
+	saveWait.Wait()
+
 	if saveScratch == nil {
 		saveScratch = image.NewRGBA(img.Bounds())
 	}
 	copy(saveScratch.Pix, img.Pix)
 
-	savewait.Wait()
-	savewait.Add(1)
+	saveWait.Add(1)
 	go func() {
 		name = fmt.Sprintf("%s.png", name)
 		outf, err := os.Create(name)
@@ -203,9 +204,9 @@ func save(img *image.RGBA, name string) {
 			log.Fatalln(err)
 		}
 		defer outf.Close()
-		png.Encode(outf, img)
+		png.Encode(outf, saveScratch)
 		log.Println("wrote", name)
-		savewait.Done()
+		saveWait.Done()
 	}()
 }
 
